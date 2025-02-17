@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سجل المربين</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: black;
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background-color: #222;
+            border-radius: 10px;
+        }
+        .menu-btn {
+            background-color: purple;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+        }
+        .record {
+            background-color: gray;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .edit-btn, .delete-btn {
+            background-color: blue;
+            color: white;
+            padding: 5px;
+            border: none;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .delete-btn {
+            background-color: red;
+        }
+        .hidden {
+            display: none;
+        }
+        .detail-btns {
+            display: inline-block;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="menu-btn" onclick="toggleMenu()">☰ القائمة</button>
+
+    <div id="menu" class="hidden">
+        <button class="menu-btn" onclick="showSection('main')">القائمة الرئيسية</button>
+        <button class="menu-btn" onclick="showSection('breeders')">سجل المربين</button>
+    </div>
+
+    <div id="main" class="container">
+        <h2>أهلا بك يا دكتور علي</h2>
+        <input type="text" id="breederName" placeholder="اسم المربي"><br><br>
+        <input type="text" id="breederPhone" placeholder="رقم جوال المربي"><br><br>
+        <select id="vaccineType">
+            <option value="معوي">معوي</option>
+            <option value="دموي">دموي</option>
+            <option value="مزدوج">مزدوج</option>
+            <option value="طاعون">طاعون</option>
+            <option value="جدري">جدري</option>
+            <option value="قلاعية">قلاعية</option>
+        </select><br><br>
+        <label>تاريخ التطعيم:</label>
+        <input type="datetime-local" id="vaccinationDate"><br><br>
+        <button class="menu-btn" onclick="addBreeder()">اضغط للإرسال</button>
+        <p id="message" style="display: none;"></p>
+    </div>
+
+    <div id="breeders" class="container hidden">
+        <h2>سجل المربين</h2>
+        <input type="text" id="search" oninput="searchBreeders()" placeholder="بحث في السجل"><br><br>
+        <div id="records-list"></div>
+    </div>
+
+    <script>
+        let breeders = [];
+
+        function toggleMenu() {
+            let menu = document.getElementById("menu");
+            menu.classList.toggle("hidden");
+        }
+
+        function showSection(section) {
+            document.getElementById("main").classList.add("hidden");
+            document.getElementById("breeders").classList.add("hidden");
+            document.getElementById(section).classList.remove("hidden");
+
+            // إخفاء الرسائل عند الانتقال
+            document.getElementById("message").style.display = 'none';
+        }
+
+        function addBreeder() {
+            let name = document.getElementById("breederName").value;
+            let phone = document.getElementById("breederPhone").value;
+            let vaccine = document.getElementById("vaccineType").value;
+            let vaccinationDate = document.getElementById("vaccinationDate").value;
+
+            if (!name || !phone || !vaccinationDate) {
+                document.getElementById("message").innerText = "يرجى تعبئة جميع الحقول";
+                document.getElementById("message").style.display = 'block';
+                return;
+            }
+
+            let date = new Date(vaccinationDate);
+            let nextAppointment = new Date(date.getTime() + 21 * 24 * 60 * 60 * 1000); // 21 يوم
+            breeders.push({ name, phone, vaccine, vaccinationDate, nextAppointment });
+
+            document.getElementById("message").innerText = "تم الإرسال";
+            document.getElementById("message").style.display = 'block';
+
+            // إخفاء الرسالة بعد 3 ثواني
+            setTimeout(() => {
+                document.getElementById("message").style.display = 'none';
+            }, 3000);
+
+            document.getElementById("breederName").value = "";
+            document.getElementById("breederPhone").value = "";
+            document.getElementById("vaccinationDate").value = "";
+
+            showBreeders();
+        }
+
+        function showBreeders() {
+            let recordsList = document.getElementById("records-list");
+            recordsList.innerHTML = "";
+
+            breeders.forEach((breeder, index) => {
+                let div = document.createElement("div");
+                div.className = "record";
+                div.innerHTML = `${breeder.name}`;
+                div.onclick = () => showBreederDetails(index);
+                recordsList.appendChild(div);
+            });
+        }
+
+        function showBreederDetails(index) {
+            let breeder = breeders[index];
+            let nextAppointmentInDays = Math.ceil((new Date(breeder.nextAppointment) - new Date()) / (1000 * 60 * 60 * 24));
+            let nextAppointmentInMinutes = Math.floor((new Date(breeder.nextAppointment) - new Date()) / (1000 * 60)) % 60;
+
+            let details = `
+                <div>
+                    <p>الاسم: ${breeder.name}</p>
+                    <p>رقم الجوال: ${breeder.phone}</p>
+                    <p>نوع التطعيم: ${breeder.vaccine}</p>
+                    <p>تاريخ التطعيم: ${breeder.vaccinationDate}</p>
+                    <p>الموعد الجاي: ${nextAppointmentInDays} أيام و ${nextAppointmentInMinutes} دقائق</p>
+                </div>
+                <div class="detail-btns">
+                    <button class="edit-btn" onclick="editBreeder(${index})">تعديل</button>
+                    <button class="delete-btn" onclick="deleteBreeder(${index})">حذف</button>
+                </div>
+            `;
+            document.getElementById("records-list").innerHTML = details; // عرض التفاصيل مباشرة في السجل
+        }
+
+        function deleteBreeder(index) {
+            breeders.splice(index, 1);
+            showBreeders();
+        }
+
+        function editBreeder(index) {
+            let breeder = breeders[index];
+            document.getElementById("breederName").value = breeder.name;
+            document.getElementById("breederPhone").value = breeder.phone;
+            document.getElementById("vaccineType").value = breeder.vaccine;
+            document.getElementById("vaccinationDate").value = breeder.vaccinationDate;
+
+            breeders.splice(index, 1); // حذف السجل القديم
+            showSection('main');
+        }
+
+        function searchBreeders() {
+            let query = document.getElementById("search").value.toLowerCase();
+            let recordsList = document.getElementById("records-list");
+            recordsList.innerHTML = "";
+
+            breeders.forEach((breeder, index) => {
+                if (breeder.name.toLowerCase().includes(query) || breeder.vaccine.toLowerCase().includes(query)) {
+                    let div = document.createElement("div");
+                    div.className = "record";
+                    div.innerHTML = `${breeder.name}`;
+                    div.onclick = () => showBreederDetails(index);
+                    recordsList.appendChild(div);
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
